@@ -448,7 +448,7 @@ async def extract_text_from_image(file: UploadFile = File(...)):
         )
     except Exception as e:
         logger.error(f"OCR failed: {e}")
-        raise HTTPException(status_code=500, detail=f"OCR processing failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="OCR processing failed due to an internal error.")
 
 
 
@@ -533,7 +533,7 @@ async def parse_excel_file(file: UploadFile = File(...)):
         })
     except Exception as e:
         logger.error(f"Excel parsing failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Excel parsing failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Excel parsing failed due to an internal error.")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -595,8 +595,7 @@ async def generate_pdf(req: PDFRequest):
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
     except Exception as e:
-        logger.error(f"PDF generation failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Erreur génération PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erreur génération PDF: Internal error.")
 
 
 # ── Service 3 : Export Excel / CSV ───────────────────────────────────────────
@@ -807,7 +806,7 @@ async def import_contacts(file: UploadFile = File(...)):
     result = import_contacts_from_excel(contents)
     
     if not result["success"]:
-        raise HTTPException(status_code=422, detail=result.get("error", "Erreur import"))
+        raise HTTPException(status_code=422, detail="Erreur d'import.")
     
     return JSONResponse(content=result)
     

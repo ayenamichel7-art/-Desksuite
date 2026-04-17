@@ -57,7 +57,7 @@ export default function RegisterPage() {
     } catch (err: any) {
       const errors = err.response?.data?.errors;
       if (errors) {
-        Object.values(errors).flat().forEach((msg: any) => toast.error(msg));
+        Object.values(errors).flat().forEach((msg: any) => toast.error(String(msg)));
       } else {
         toast.error("Erreur lors de l'inscription");
       }
@@ -192,7 +192,7 @@ export default function RegisterPage() {
                 )}
                 onClick={() => document.getElementById('logo-input')?.click()}
               >
-                {logoPreview ? (
+                {logoPreview && logoPreview.startsWith('blob:') ? (
                   <div className="relative group/img w-full h-24 flex items-center justify-center">
                     <img src={logoPreview} alt="Logo" className="max-h-full max-w-full object-contain drop-shadow-md" />
                   </div>
