@@ -5,6 +5,8 @@ on:
     branches: [ "main", "develop" ]
   pull_request:
     branches: [ "main" ]
+permissions:
+  contents: read
 
 jobs:
   laravel-tests:

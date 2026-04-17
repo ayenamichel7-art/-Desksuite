@@ -467,7 +467,7 @@ async def send_tg_message(chat_id: str, text: str):
         return {"success": True}
     except Exception as e:
         logger.error(f"Telegram send error: {e}")
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error": "An internal server error occurred."}
 
 @app.get("/system/daily-audit-report")
 async def send_daily_summary_report():
@@ -502,7 +502,7 @@ async def send_daily_summary_report():
                 return {"success": False, "error": "Source de données indisponible."}
         except Exception as e:
             logger.exception("Daily report error")
-            return {"success": False, "error": str(e)}
+            return {"success": False, "error": "An internal server error occurred."}
 
 
 @app.post("/excel/parse")
@@ -629,7 +629,7 @@ async def export_excel(req: ExportRequest):
         )
     except Exception as e:
         logger.error(f"Excel export failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 
 @app.post("/export/csv")
@@ -644,7 +644,7 @@ async def export_csv_endpoint(req: ExportRequest):
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 
 # ── Service 4 : Image Processing ────────────────────────────────────────────
@@ -689,7 +689,7 @@ async def optimize_image(
         return JSONResponse(content=response_data)
     except Exception as e:
         logger.error(f"Image processing failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 
 # ── Service 6 : Backup Automatisé ───────────────────────────────────────────
@@ -704,7 +704,7 @@ async def trigger_database_backup():
         return result
     except Exception as e:
         logger.error(f"Backup trigger failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 @app.post("/backup/files")
 async def trigger_file_backup():
@@ -716,7 +716,7 @@ async def trigger_file_backup():
         return result
     except Exception as e:
         logger.error(f"File backup trigger failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 
 @app.get("/backup/list")
@@ -727,7 +727,7 @@ async def list_available_backups_endpoint():
         return {"success": True, "backups": backups, "total": len(backups)}
     except Exception as e:
         logger.error(f"List backups failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 @app.post("/ocr/receipt")
 async def ocr_receipt(file: UploadFile = File(...)):
@@ -760,7 +760,7 @@ async def ocr_receipt(file: UploadFile = File(...)):
         
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 
 @app.post("/calendar/export")
@@ -777,7 +777,7 @@ async def export_calendar(request: Request):
         )
     except Exception as e:
         logger.error(f"❌ [Calendar Export Error] {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 
 class ChatIntentRequest(BaseModel):
@@ -824,7 +824,7 @@ async def inventory_valuation(req: InventoryReportRequest):
         )
     except Exception as e:
         logger.error(f"Valuation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 @app.post("/inventory/labels")
 async def inventory_labels(products: List[ProductItem]):
@@ -838,7 +838,7 @@ async def inventory_labels(products: List[ProductItem]):
         )
     except Exception as e:
         logger.error(f"Labels failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 
 
@@ -972,7 +972,7 @@ def parse_intent(text: str) -> dict:
         doc_ref = ref_match.group(1).upper() if ref_match else None
         
         # Détection de l'email du destinataire (optionnel)
-        email_match = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", text)
+        email_match = re.search(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$", text)
         target_email = email_match.group(0) if email_match else None
 
         return {
@@ -1207,4 +1207,4 @@ async def api_generate_expense_report(request: Request):
         }
     except Exception as e:
         logger.error(f"Erreur API Rapport: {e}")
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error": "An internal server error occurred."}

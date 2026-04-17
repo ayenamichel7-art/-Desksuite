@@ -208,7 +208,7 @@ export default function RegisterPage() {
                   id="logo-input" type="file" className="hidden" accept="image/*"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) {
+                    if (file && file.type.startsWith('image/')) {
                       setLogo(file);
                       setLogoPreview(URL.createObjectURL(file));
                     }
