@@ -1,4 +1,4 @@
-fastapi==0.115.*
+fastapi==0.136.*
 uvicorn[standard]==0.34.*
 python-telegram-bot==21.*
 httpx==0.28.*
