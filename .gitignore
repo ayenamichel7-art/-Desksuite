@@ -1,0 +1,60 @@
+# ========================================
+# 🛡️ Desksuite — Master .gitignore
+# ========================================
+
+# --- Environment & Secrets ---
+.env
+.env.local
+.env.production
+.env.staging
+*.env.backup
+
+# --- IDE ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*.kate-swp
+
+# --- Logs ---
+*.log
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Docker ---
+docker-compose.override.yml
+
+# --- System Reports (NEVER commit) ---
+dxdiag_report.txt
+test_output.txt
+
+# --- Test Artifacts ---
+junit.xml
+tmp_test_*.py
+*_audit.log
+
+# --- Temporary & Build ---
+*.tmp
+*.bak
+*.orig
+
+# --- Dependencies (managed per-project) ---
+node_modules/
+vendor/
+__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+
+# --- Runtime data ---
+*.pid
+*.seed
+*.pid.lock
+
+# --- Compiled output ---
+dist/
+build/
+*.js.map

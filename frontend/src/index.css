@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-primary: #4B0082;
+  --brand-secondary: #FF8C00;
+}
+
+@layer base {
+  * {
+    @apply transition-colors duration-150;
+  }
+
+  body {
+    @apply bg-base-100 text-base-content;
+  }
+
+  /* Scrollbar personnalisée */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-base-200 rounded-full;
+  }
+   ::-webkit-scrollbar-thumb {
+    @apply bg-base-300 rounded-full hover:bg-primary/30;
+  }
+}
+
+@layer components {
+  /* Glassmorphism card */
+  .glass-card {
+    @apply bg-base-100/80 backdrop-blur-xl border border-base-300/50 rounded-2xl shadow-lg;
+  }
+
+  /* Sidebar item */
+  .sidebar-item {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium
+           text-base-content/70 hover:bg-primary/10 hover:text-primary
+           transition-all duration-200 cursor-pointer;
+  }
+  .sidebar-item.active {
+    @apply bg-primary/15 text-primary font-semibold shadow-sm;
+  }
+
+  /* File/Folder card */
+  .file-card {
+    @apply glass-card p-4 hover:shadow-xl hover:scale-[1.02]
+           transition-all duration-200 cursor-pointer;
+  }
+
+  /* Module card on dashboard */
+  .module-card {
+    @apply glass-card p-6 hover:shadow-2xl hover:-translate-y-1
+           transition-all duration-300 cursor-pointer overflow-hidden relative;
+  }
+  .module-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 1rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .module-card:hover::before {
+    opacity: 1;
+  }
+
+  /* Toolbar button (editors) */
+  .toolbar-btn {
+    @apply p-2 rounded-lg hover:bg-base-200 active:bg-base-300
+           transition-all duration-150 text-base-content/70 hover:text-base-content;
+  }
+  .toolbar-btn.active {
+    @apply bg-primary/15 text-primary;
+  }
+
+  /* Badge */
+  .status-badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  /* Input focus ring */
+  .input-focus {
+    @apply focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all duration-200;
+  }
+}
+
+/* Tiptap Editor Styles */
+.tiptap-editor .ProseMirror {
+  @apply min-h-[500px] p-8 outline-none;
+}
+.tiptap-editor .ProseMirror p {
+  @apply mb-3 leading-relaxed;
+}
+.tiptap-editor .ProseMirror h1 {
+  @apply text-3xl font-bold mb-4 mt-6;
+}
+.tiptap-editor .ProseMirror h2 {
+  @apply text-2xl font-semibold mb-3 mt-5;
+}
+.tiptap-editor .ProseMirror h3 {
+  @apply text-xl font-semibold mb-2 mt-4;
+}
+.tiptap-editor .ProseMirror ul {
+  @apply list-disc pl-6 mb-3;
+}
+.tiptap-editor .ProseMirror ol {
+  @apply list-decimal pl-6 mb-3;
+}
+.tiptap-editor .ProseMirror blockquote {
+  @apply border-l-4 border-primary/40 pl-4 italic text-base-content/70 my-4;
+}
+.tiptap-editor .ProseMirror code {
+  @apply bg-base-200 px-1.5 py-0.5 rounded text-sm font-mono;
+}
+.tiptap-editor .ProseMirror pre {
+  @apply bg-base-200 p-4 rounded-xl my-4 overflow-x-auto;
+}
+.tiptap-editor .ProseMirror table {
+  @apply w-full border-collapse my-4;
+}
+.tiptap-editor .ProseMirror td,
+.tiptap-editor .ProseMirror th {
+  @apply border border-base-300 p-2 text-left;
+}
+.tiptap-editor .ProseMirror th {
+  @apply bg-base-200 font-semibold;
+}
