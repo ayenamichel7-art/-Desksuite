@@ -1,0 +1,44 @@
+#!/bin/bash
+# 🛡️ Desksuite — Pre-commit Hook
+# Empêche le commit de secrets et vérifie la qualité du code.
+
+echo "🔐 Desksuite Pre-Commit Security Check..."
+
+# --- 1. Bloquer les commits de fichiers .env ---
+STAGED_ENVS=$(git diff --cached --name-only | grep -E "^\.env$|/\.env$" | grep -v ".env.example" | grep -v ".env.testing")
+if [ -n "$STAGED_ENVS" ]; then
+    echo "❌ BLOQUÉ : Vous essayez de commiter un fichier .env avec des secrets !"
+    echo "   Fichiers détectés :"
+    echo "   $STAGED_ENVS"
+    echo ""
+    echo "   Utilisez 'git reset HEAD <fichier>' pour le retirer du staging."
+    exit 1
+fi
+
+# --- 2. Scan des secrets connus (AWS, Stripe, GitHub, GitLab) dans le contenu stagé ---
+STAGED_CODE=$(git diff --cached --name-only --diff-filter=ACM | grep -v "^scripts/" | grep -v "\.md$")
+if [ -n "$STAGED_CODE" ]; then
+    SECRETS_FOUND=$(echo "$STAGED_CODE" | xargs grep -lE "AKIA[0-9A-Z]{16}|sk_live_[0-9a-zA-Z]{24,}|ghp_[0-9a-zA-Z]{36}|glpat-[0-9a-zA-Z\-]{20,}" 2>/dev/null)
+    if [ -n "$SECRETS_FOUND" ]; then
+        echo "❌ BLOQUÉ : Clé API ou token détecté dans les fichiers suivants :"
+        echo "   $SECRETS_FOUND"
+        exit 1
+    fi
+fi
+
+# --- 3. Vérifier les patterns de secrets communs ---
+PATTERNS="password\s*=\s*['\"][^'\"]*['\"]|api_key\s*=\s*['\"][^'\"]*['\"]|secret\s*=\s*['\"][^'\"]*['\"]|AKIA[0-9A-Z]{16}|sk_live_[0-9a-zA-Z]{24,}"
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+if [ -n "$STAGED_FILES" ]; then
+    LEAKS=$(echo "$STAGED_FILES" | xargs grep -lEn "$PATTERNS" 2>/dev/null | grep -v ".env.example" | grep -v "SECURITY.md" | grep -v "README.md" | grep -v ".gitignore" | grep -v "scripts/")
+    if [ -n "$LEAKS" ]; then
+        echo "⚠️  ATTENTION : Patterns de secrets potentiels détectés dans :"
+        echo "   $LEAKS"
+        echo "   Vérifiez que ce ne sont pas de vrais secrets avant de continuer."
+        echo "   Pour forcer le commit : git commit --no-verify"
+    fi
+fi
+
+echo "✅ Pre-commit check passed."
+exit 0

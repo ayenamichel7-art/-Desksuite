@@ -1,0 +1,372 @@
+services:
+  # --- Reverse Proxy Internal (Nginx) ---
+  nginx:
+    image: nginx:stable-alpine
+    container_name: desksuite-nginx
+    ports:
+      - "${NGINX_PORT:-80}:80"
+    volumes:
+      - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - laravel
+      - react
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    networks:
+      - desksuite-net
+
+  # --- Zero Trust Tunnel (Cloudflare) ---
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: desksuite-tunnel
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.2'
+    networks:
+      - desksuite-net
+
+  # --- Backend Core (Laravel 12 + Octane/Swoole) ---
+  laravel:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: desksuite-api
+    working_dir: /var/www/html
+    environment:
+      - APP_ENV=local
+      - APP_KEY=${APP_KEY}
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - FILESYSTEM_DISK=s3
+      - AWS_ENDPOINT=http://minio:9000
+      - AWS_URL=http://desksuite.localhost/storage/desksuite
+      - REDIS_HOST=redis
+      - REDIS_CLIENT=predis
+      - SESSION_DRIVER=redis
+      - CACHE_DRIVER=redis
+      - OCTANE_SERVER=swoole
+      - QUEUE_CONNECTION=redis
+      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
+      # Reverb (broadcasting depuis le backend)
+      - BROADCAST_CONNECTION=reverb
+      - REVERB_APP_ID=${REVERB_APP_ID:-846522}
+      - REVERB_APP_KEY=${REVERB_APP_KEY:-desksuite-key}
+      - REVERB_APP_SECRET=${REVERB_APP_SECRET:-desksuite-secret}
+      - REVERB_HOST=reverb
+      - REVERB_PORT=8080
+      - REVERB_SCHEME=http
+    volumes:
+      - ./backend:/var/www/html
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.5'
+    networks:
+      - desksuite-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "8000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # --- Queue Worker (Laravel Horizon) ---
+  queue:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: desksuite-queue
+    command: php artisan horizon
+    environment:
+      - APP_ENV=local
+      - APP_KEY=${APP_KEY}
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_CLIENT=predis
+      - QUEUE_CONNECTION=redis
+      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
+    volumes:
+      - ./backend:/var/www/html
+    restart: unless-stopped
+    networks:
+      - desksuite-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # --- Frontend (React 19 + Vite) ---
+  react:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: desksuite-ui
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://desksuite.localhost:${NGINX_PORT:-8081}/api
+      - VITE_REVERB_APP_KEY=desksuite-key
+      - VITE_REVERB_HOST=desksuite.localhost
+      - VITE_REVERB_PORT=80
+      - VITE_REVERB_SCHEME=http
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+    networks:
+      - desksuite-net
+
+  # --- Real-time Broadcaster (Reverb) ---
+  reverb:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: desksuite-reverb
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+    environment:
+      - APP_ENV=local
+      - APP_KEY=${APP_KEY}
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - FILESYSTEM_DISK=s3
+      - AWS_ENDPOINT=http://minio:9000
+      - REDIS_HOST=redis
+      - REDIS_CLIENT=predis
+      # Variables Reverb nécessaires pour le service
+      - BROADCAST_CONNECTION=reverb
+      - REVERB_APP_ID=${REVERB_APP_ID:-846522}
+      - REVERB_APP_KEY=${REVERB_APP_KEY:-desksuite-key}
+      - REVERB_APP_SECRET=${REVERB_APP_SECRET:-desksuite-secret}
+      - REVERB_HOST=0.0.0.0
+      - REVERB_PORT=8080
+      - REVERB_SCHEME=http
+    volumes:
+      - ./backend:/var/www/html
+    restart: unless-stopped
+    networks:
+      - desksuite-net
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # --- Intelligence Worker (Python FastAPI) ---
+  python-worker:
+    build:
+      context: ./python-worker
+      dockerfile: Dockerfile
+    container_name: desksuite-worker
+    environment:
+      - API_URL=http://laravel:8000/api/internal
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_ADMIN_CHAT_ID=${TELEGRAM_ADMIN_CHAT_ID:-6171095816}
+      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
+      # MinIO (Backup & Storage)
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+      - MINIO_BUCKET=desksuite
+      - MINIO_BACKUP_BUCKET=desksuite-backups
+      # Postgres (Backup)
+      - PGHOST=postgres
+      - PGPORT=5432
+      - PGDATABASE=${DB_DATABASE}
+      - PGUSER=${DB_USERNAME}
+      - PGPASSWORD=${DB_PASSWORD}
+    volumes:
+      - ./python-worker:/app
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.5'
+    networks:
+      - desksuite-net
+    depends_on:
+      laravel:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+
+  # --- Background Task Worker (Celery) ---
+  python-celery:
+    build:
+      context: ./python-worker
+      dockerfile: Dockerfile
+    container_name: desksuite-celery
+    command: celery -A celery_app worker --loglevel=info
+    environment:
+      - REDIS_URL=redis://redis:6379/2
+      - API_URL=http://laravel:8000/api/internal
+      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - PGHOST=postgres
+      - PGPASSWORD=${DB_PASSWORD}
+      - PGDATABASE=${DB_DATABASE}
+      - PGUSER=${DB_USERNAME}
+    volumes:
+      - ./python-worker:/app
+    restart: unless-stopped
+    networks:
+      - desksuite-net
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  # --- Celery Monitoring (Flower) ---
+  flower:
+    image: mher/flower
+    container_name: desksuite-flower
+    command: celery --broker=redis://redis:6379/2 flower --port=5555
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - python-celery
+    networks:
+      - desksuite-net
+
+  # --- Orchestration (Prefect Server & Worker) ---
+  prefect:
+    build:
+      context: ./python-worker
+      dockerfile: Dockerfile
+    container_name: desksuite-prefect
+    command: python prefect_flows.py
+    environment:
+      - PREFECT_API_URL=http://prefect:4200/api
+      - PREFECT_SERVER_API_HOST=0.0.0.0
+      - PREFECT_API_DATABASE_CONNECTION_URL=sqlite+aiosqlite:////app/prefect-server.db
+      - API_URL=http://laravel:8000/api/internal
+      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
+      - PGHOST=postgres
+      - PGPASSWORD=${DB_PASSWORD}
+      - PGDATABASE=${DB_DATABASE}
+      - PGUSER=${DB_USERNAME}
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./python-worker:/app
+    ports:
+      - "4200:4200"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    networks:
+      - desksuite-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # --- Databases & Infrastructure ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: desksuite-db
+    environment:
+      - POSTGRES_DB=${DB_DATABASE}
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+    networks:
+      - desksuite-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-admin} -d ${DB_DATABASE:-desksuite}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: desksuite-redis
+    restart: unless-stopped
+    networks:
+      - desksuite-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: desksuite-s3
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    volumes:
+      - miniodata:/data
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    networks:
+      - desksuite-net
+
+networks:
+  desksuite-net:
+    driver: bridge
+
+volumes:
+  pgdata:
+  miniodata:
