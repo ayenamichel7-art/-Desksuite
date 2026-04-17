@@ -104,8 +104,8 @@
 
 ```bash
 # 1. Cloner le dépôt
-git clone https://github.com/ayenamichel7-art/Desksuite.git
-cd Desksuite
+git clone https://github.com/ayenamichel7-art/-Desksuite.git
+cd -Desksuite
 
 # 2. Configurer l'environnement
 cp .env.example .env
