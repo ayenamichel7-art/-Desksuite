@@ -57,7 +57,7 @@ export default function RegisterPage() {
     } catch (err: any) {
       const errors = err.response?.data?.errors;
       if (errors) {
-        Object.values(errors).flat().forEach((msg: any) => toast.error(String(msg)));
+        toast.error("Veuillez vérifier vos informations et réessayer.");
       } else {
         toast.error("Erreur lors de l'inscription");
       }

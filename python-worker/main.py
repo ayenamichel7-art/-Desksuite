@@ -699,7 +699,7 @@ async def trigger_database_backup():
     try:
         result = await asyncio.to_thread(run_database_backup)
         if not result["success"]:
-            raise HTTPException(status_code=500, detail=result["error"])
+            raise HTTPException(status_code=500, detail="Database backup trigger failed.")
         return result
     except Exception as e:
         logger.error(f"Backup trigger failed: {e}")
@@ -711,7 +711,7 @@ async def trigger_file_backup():
     try:
         result = await asyncio.to_thread(backup_uploaded_files)
         if not result["success"]:
-            raise HTTPException(status_code=500, detail=result.get("error", "Unknown error"))
+            raise HTTPException(status_code=500, detail="File backup trigger failed.")
         return result
     except Exception as e:
         logger.error(f"File backup trigger failed: {e}")
@@ -735,7 +735,7 @@ async def ocr_receipt(file: UploadFile = File(...)):
         content = await file.read()
         result = await asyncio.to_thread(extract_receipt_data, content)
         if not result.get("success"):
-            raise HTTPException(status_code=500, detail=result.get("error"))
+            raise HTTPException(status_code=500, detail="OCR analysis failed.")
         
         # --- NOUVEAU : Alerte Fraude Automatique (Security Watchdog) ---
         security = result["data"].get("security", {})
