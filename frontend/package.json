@@ -24,7 +24,7 @@
     "@tiptap/extension-table-row": "^2.11.0",
     "@tiptap/extension-text-align": "^2.11.0",
     "@tiptap/extension-text-style": "^2.11.0",
-    "@tiptap/extension-underline": "^2.11.0",
+    "@tiptap/extension-underline": "^3.22.3",
     "@tiptap/react": "^2.11.0",
     "@tiptap/starter-kit": "^2.11.0",
     "axios": "^1.7.0",
