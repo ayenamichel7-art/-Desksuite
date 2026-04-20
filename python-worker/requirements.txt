@@ -6,7 +6,7 @@ openpyxl==3.1.*
 pytesseract==0.3.*
 Pillow>=11.1.0
 python-multipart==0.0.*
-pydantic==2.*
+pydantic==2.13.*
 redis==5.*
 fpdf2==2.8.2
 # ── Nouveaux Services Souverains ──
