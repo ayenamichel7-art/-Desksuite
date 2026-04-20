@@ -7,7 +7,7 @@ pytesseract==0.3.*
 Pillow>=11.1.0
 python-multipart==0.0.*
 pydantic==2.*
-redis==5.*
+redis==7.*
 fpdf2==2.8.2
 # ── Nouveaux Services Souverains ──
 weasyprint>=63.1
