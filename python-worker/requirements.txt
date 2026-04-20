@@ -16,7 +16,7 @@ apscheduler==3.10.*
 pandas==2.*
 # ── Background & Orchestration ──
 celery[redis]==5.4.*
-prefect==2.20.*
+prefect==3.6.*
 flower==2.0.*
 # ── Entreprise & Vision Pro ──
 opencv-python-headless==4.10.*
