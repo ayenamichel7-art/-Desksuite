@@ -27,7 +27,7 @@
     "@tiptap/extension-underline": "^2.11.0",
     "@tiptap/react": "^2.11.0",
     "@tiptap/starter-kit": "^2.11.0",
-    "axios": "^1.7.0",
+    "axios": "^1.15.1",
     "clsx": "^2.1.0",
     "date-fns": "^4.1.0",
     "laravel-echo": "^2.3.1",
