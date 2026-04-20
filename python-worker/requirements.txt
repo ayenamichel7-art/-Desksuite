@@ -15,7 +15,7 @@ boto3==1.35.*
 apscheduler==3.10.*
 pandas==2.*
 # ── Background & Orchestration ──
-celery[redis]==5.4.*
+celery[redis]==5.6.*
 prefect==2.20.*
 flower==2.0.*
 # ── Entreprise & Vision Pro ──
